@@ -131,14 +131,8 @@ def main():
     random.seed(98513)
     vertices_num_last_graph, graphs_from = read_arguments()
 
-    # Create the results folders if they don't exist already
-    if not os.path.isdir("results"): 
-        os.mkdir("results")
-        os.mkdir("results/" + graphs_from)
-    elif not os.path.isdir("results/" + graphs_from):
-        os.mkdir("results/" + graphs_from)
-
-    algorithm_for_graphs_creator(vertices_num_last_graph, graphs_from)
+    if graphs_from == "graphs_creator":
+        algorithm_for_graphs_creator(vertices_num_last_graph, graphs_from)
         
 if __name__ == "__main__":
     main()

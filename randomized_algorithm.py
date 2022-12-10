@@ -1,5 +1,4 @@
 import getopt
-import itertools
 import json
 import math
 import os
@@ -9,17 +8,17 @@ import time
 import networkx as nx
 import matplotlib.pyplot as plt
 
-def create_graphic_image(vertices, edges_set, num_vertices, percentage):
+def create_graphic_image(vertices, edges_set, num_vertices, percentage, graphs_from):
     G = nx.Graph() # Create a graph
     for edge in edges_set: 
         G.add_node(edge[0], pos=vertices[edge[0]]) 
         G.add_node(edge[1], pos=vertices[edge[1]])
         G.add_edge(*edge) # Add the edge to the graph
     nx.draw(G, pos=nx.get_node_attributes(G,'pos'), with_labels = True, node_color='lightblue')
-    plt.savefig("results/graph_num_vertices_" + str(num_vertices) + "_percentage_" + str(percentage) + ".png")
+    plt.savefig("results/" + graphs_from + "/graph_num_vertices_" + str(num_vertices) + "_percentage_" + str(percentage) + ".png")
     plt.clf()
 
-def read_graph(num_vertices, percentage):
+def read_from_graphs_creator(num_vertices, percentage):
     # Read the graph from the file
     file = open("graphs/graph_num_vertices_" + str(num_vertices) + "_percentage_" + str(percentage) + ".txt", "r")
     vertices = file.readline()[:-1].replace("'", "\"").replace("(", "[").replace(")", "]")
@@ -29,7 +28,11 @@ def read_graph(num_vertices, percentage):
     edges = {int(key):value for key,value in json.loads(edges).items()}
     return vertices, edges
 
-def min_edge_dominating_set(vertices, edges):
+def read_from_SW():
+    pass
+
+def randomized_algorithm(vertices, edges):
+    execution_time = time.time() # Start the execution time counter
     result, basic_operations_num, configurations_tested = set(), 0, 0 
     
     print("Vertices: ", vertices)
@@ -73,49 +76,20 @@ def min_edge_dominating_set(vertices, edges):
         if len(candidate_solution) < len(result) or not result: # If the candidate solution is better than the current solution or the current solution is empty
             result = candidate_solution # Save the candidate solution as the current solution
     print("Dominating set found: ", result)
-    return result, basic_operations_num, configurations_tested # If no dominating set is found, return the edge set
+    execution_time = time.time() - execution_time # Stop the execution time counter
+    return result, execution_time, basic_operations_num, configurations_tested # Return the min edge dominating set
 
-def read_arguments():
-    # Remove 1st argument from the list of command line arguments
-    argumentList = sys.argv[1:]
-    
-    # Options
-    options = "v:"
-    long_options = ["Vertices_Num_Last_Graph"]
-    
-    vertices_num_last_graph = 10
-    try:
-        # Parsing argument
-        arguments, values = getopt.getopt(argumentList, options, long_options)
-        
-        # Checking each argument
-        for currentArgument, currentValue in arguments:
-    
-            if currentArgument in ("-v", "--Vertices_Num_Last_Graph"):
-                vertices_num_last_graph = int(currentValue)
-    except getopt.error as err:
-        # Output error, and return with an error code
-        print (str(err))
-    return vertices_num_last_graph
-
-def main():
-    random.seed(98513)
-    # Create the results folders if they don't exist already
-    if not os.path.isdir("results"): 
-        os.mkdir("results")
-        
-    file = open("results/analyze_randomized_algorithm.txt", 'w')
+def algorithm_for_graphs_creator(vertices_num_last_graph, graphs_from):
+    file = open("results/" + graphs_from + "/analyze_randomized_algorithm.txt", 'w')
     file.write("vertices_num percentage_max_num_edges solution_size basic_operations_num configurations_tested execution_time\n")
     solutions = []
 
     #Read graphs and determine the min edge dominating set with 2, 3, 4, ... vertices
-    for vertices_num in range(2, read_arguments() + 1):
+    for vertices_num in range(2, vertices_num_last_graph + 1):
         for percentage in [0.125, 0.25, 0.50, 0.75]:
-            vertices, edges = read_graph(vertices_num, percentage)
+            vertices, edges = read_from_graphs_creator(vertices_num, percentage)
 
-            execution_time = time.time() # Start the execution time counter
-            solution_edges, basic_operations_num, configurations_tested = min_edge_dominating_set(vertices, edges)
-            execution_time = time.time() - execution_time # Stop the execution time counter
+            solution_edges, execution_time, basic_operations_num, configurations_tested = randomized_algorithm(vertices, edges)
 
             # Write the results to the file
             file.write("%s %f %s %s %s %f\n" % (vertices_num, percentage, len(solution_edges), basic_operations_num, configurations_tested, execution_time))
@@ -125,7 +99,46 @@ def main():
     
     print("Create and save image of solution graphs...")
     for solution in solutions:
-        create_graphic_image(*solution)
+        create_graphic_image(*solution, graphs_from)
+
+def read_arguments():
+    # Remove 1st argument from the list of command line arguments
+    argumentList = sys.argv[1:]
+    
+    # Options
+    options = "v:g:"
+    long_options = ["Vertices_Num_Last_Graph", "Graphs_From"]
+    
+    vertices_num_last_graph = 10
+    graphs_from = "graphs_creator"
+    try:
+        # Parsing argument
+        arguments, values = getopt.getopt(argumentList, options, long_options)
+        
+        # Checking each argument
+        for currentArgument, currentValue in arguments:
+    
+            if currentArgument in ("-v", "--Vertices_Num_Last_Graph"):
+                vertices_num_last_graph = int(currentValue)
+            elif currentArgument in ("-g", "--Graphs_From"):
+                graphs_from = currentValue
+    except getopt.error as err:
+        # Output error, and return with an error code
+        print (str(err))
+    return vertices_num_last_graph, graphs_from
+
+def main():
+    random.seed(98513)
+    vertices_num_last_graph, graphs_from = read_arguments()
+
+    # Create the results folders if they don't exist already
+    if not os.path.isdir("results"): 
+        os.mkdir("results")
+        os.mkdir("results/" + graphs_from)
+    elif not os.path.isdir("results/" + graphs_from):
+        os.mkdir("results/" + graphs_from)
+
+    algorithm_for_graphs_creator(vertices_num_last_graph, graphs_from)
         
 if __name__ == "__main__":
     main()

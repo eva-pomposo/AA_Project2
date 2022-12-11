@@ -67,6 +67,7 @@ def randomized_algorithm(edges, num_edges):
         configurations_tested += 1
         candidate_solution = set()
         edges_copy = copy.deepcopy(edges) # Copy the edges
+        basic_operations_num += 2
         while edges_copy: # While the graph is not empty
             # Select a random edge
             vertice1 = random.choice(list(edges_copy.keys()))
@@ -94,7 +95,7 @@ def randomized_algorithm(edges, num_edges):
 
             # Save the edge to the candidate solution
             candidate_solution.add((vertice1, vertice2))
-            basic_operations_num += 7
+            basic_operations_num += 8
 
         if len(candidate_solution) < len(result) or not result: # If the candidate solution is better than the current solution or the current solution is empty
             result = candidate_solution # Save the candidate solution as the current solution

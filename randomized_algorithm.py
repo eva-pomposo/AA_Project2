@@ -26,8 +26,13 @@ def read_from_graphs_creator(num_vertices, percentage):
     edges = file.readline().replace("'", "\"")
     file.close()
     vertices = {int(key):(value[0], value[1]) for key,value in json.loads(vertices).items()}
-    edges = {int(key):value for key,value in json.loads(edges).items()}
-    return vertices, edges
+    edges_dict = {}
+    num_edges = 0
+    for key,value in json.loads(edges).items():
+        edges_dict[int(key)] = value
+        num_edges += len(value)
+    num_edges /= 2
+    return vertices, edges_dict, int(num_edges)
 
 def read_from_SW(file_name):
     # Read the graph from the file
@@ -51,19 +56,14 @@ def read_from_SW(file_name):
         if vertice2 in edges: edges[vertice2].append(vertice1) 
         else: edges[vertice2] = [vertice1]
     file.close() # Close the file
-    print("Finished reading the graph from the file.")
     return num_vertices, num_edges, edges # Return the number of vertices, the number of edges and the edges
 
-def randomized_algorithm(edges):
+def randomized_algorithm(edges, num_edges):
     execution_time = time.time() # Start the execution time counter
     result, basic_operations_num, configurations_tested = set(), 0, 0 
     
     # Iterating through the randomly generated candidate solutions
-    #print(sum(len(lst) for lst in edges.values()) / 2)
-    for i in range( max(2,math.ceil(0.30 * math.log(2**( int(sum(len(lst) for lst in edges.values()) / 2 )) - 1) ) ) ): 
-    #for i in range( math.ceil(0.10 * (2**( int(sum(len(lst) for lst in edges.values()) / 2 )) - 1) ) ): 
-    # stop testing after spending a certain amount of computation time
-    #while time.time() - execution_time < 25:
+    for i in range( max(2,math.ceil(0.23 * math.log(2**(num_edges) - 1) ) ) ): 
         configurations_tested += 1
         candidate_solution = set()
         edges_copy = copy.deepcopy(edges) # Copy the edges
@@ -98,7 +98,6 @@ def randomized_algorithm(edges):
 
         if len(candidate_solution) < len(result) or not result: # If the candidate solution is better than the current solution or the current solution is empty
             result = candidate_solution # Save the candidate solution as the current solution
-    print("Dominating set found: ", result)
     execution_time = time.time() - execution_time # Stop the execution time counter
     return result, execution_time, basic_operations_num, configurations_tested # Return the min edge dominating set
 
@@ -110,9 +109,9 @@ def algorithm_for_graphs_creator(vertices_num_last_graph, graphs_from):
     #Read graphs and determine the min edge dominating set with 2, 3, 4, ... vertices
     for vertices_num in range(2, vertices_num_last_graph + 1):
         for percentage in [0.125, 0.25, 0.50, 0.75]:
-            vertices, edges = read_from_graphs_creator(vertices_num, percentage)
+            vertices, edges, edges_num = read_from_graphs_creator(vertices_num, percentage)
 
-            solution_edges, execution_time, basic_operations_num, configurations_tested = randomized_algorithm(edges)
+            solution_edges, execution_time, basic_operations_num, configurations_tested = randomized_algorithm(edges, edges_num)
 
             # Write the results to the file
             file.write("%s %f %s %s %s %f\n" % (vertices_num, percentage, len(solution_edges), basic_operations_num, configurations_tested, execution_time))
@@ -132,10 +131,9 @@ def algorithm_for_SW(graphs_from):
     for file_name in os.listdir("SW_ALGUNS_GRAFOS"):
         vertices_num, edges_num, edges = read_from_SW(file_name)
 
-        solution_edges, execution_time, basic_operations_num, configurations_tested = randomized_algorithm(edges)
+        solution_edges, execution_time, basic_operations_num, configurations_tested = randomized_algorithm(edges, edges_num)
 
         # Write the results to the file
-        print("%s %s %s %s %s %f\n" % (vertices_num, edges_num, len(solution_edges), basic_operations_num, configurations_tested, execution_time))
         file.write("%s %s %s %s %s %f\n" % (vertices_num, edges_num, len(solution_edges), basic_operations_num, configurations_tested, execution_time))
 
     file.close()

@@ -7,6 +7,7 @@ import sys
 import time
 import networkx as nx
 import matplotlib.pyplot as plt
+import copy
 
 def create_graphic_image(vertices, edges_set, num_vertices, percentage, graphs_from):
     G = nx.Graph() # Create a graph
@@ -28,26 +29,48 @@ def read_from_graphs_creator(num_vertices, percentage):
     edges = {int(key):value for key,value in json.loads(edges).items()}
     return vertices, edges
 
-def read_from_SW():
-    pass
+def read_from_SW(file_name):
+    # Read the graph from the file
+    file = open("SW_ALGUNS_GRAFOS/" + file_name, "r") # Open the file
 
-def randomized_algorithm(vertices, edges):
+    # Ignore the first two properties, which are not needed for algorithm development
+    file.readline()
+    file.readline()
+
+    num_vertices = int(file.readline()) # Read the number of vertices
+    num_edges = int(file.readline()) # Read the number of edges
+    edges = {} # Dictionary of edges
+    
+    # Read the edges
+    for i in range(num_edges): # For each edge
+        vertice1, vertice2 = file.readline().split() # Read the edge
+        vertice1, vertice2 = int(vertice1), int(vertice2) # Convert the edge to int
+        # Add the edge to the dictionary
+        if vertice1 in edges: edges[vertice1].append(vertice2) 
+        else: edges[vertice1] = [vertice2] 
+        if vertice2 in edges: edges[vertice2].append(vertice1) 
+        else: edges[vertice2] = [vertice1]
+    file.close() # Close the file
+    print("Finished reading the graph from the file.")
+    return num_vertices, num_edges, edges # Return the number of vertices, the number of edges and the edges
+
+def randomized_algorithm(edges):
     execution_time = time.time() # Start the execution time counter
     result, basic_operations_num, configurations_tested = set(), 0, 0 
     
-    print("Vertices: ", vertices)
-    print("Edges: ", edges)
     # Iterating through the randomly generated candidate solutions
-    for i in range( math.ceil(0.60 * (2**len(vertices) - 1) ) ): 
+    #print(sum(len(lst) for lst in edges.values()) / 2)
+    for i in range( max(2,math.ceil(0.30 * math.log(2**( int(sum(len(lst) for lst in edges.values()) / 2 )) - 1) ) ) ): 
+    #for i in range( math.ceil(0.10 * (2**( int(sum(len(lst) for lst in edges.values()) / 2 )) - 1) ) ): 
+    # stop testing after spending a certain amount of computation time
+    #while time.time() - execution_time < 25:
         configurations_tested += 1
         candidate_solution = set()
-        edges_copy = {key:value[:] for key,value in edges.items()} # Copy the edges
+        edges_copy = copy.deepcopy(edges) # Copy the edges
         while edges_copy: # While the graph is not empty
             # Select a random edge
             vertice1 = random.choice(list(edges_copy.keys()))
             vertice2 = random.choice(edges_copy[vertice1])
-            print("Vertice1: ", vertice1)
-            print("Vertice2: ", vertice2)
 
             adjacent_vertices = set(edges_copy[vertice1] + edges_copy[vertice2]) # Get the adjacent vertices of the edge
             #remove the edge from adjacent vertices
@@ -89,7 +112,7 @@ def algorithm_for_graphs_creator(vertices_num_last_graph, graphs_from):
         for percentage in [0.125, 0.25, 0.50, 0.75]:
             vertices, edges = read_from_graphs_creator(vertices_num, percentage)
 
-            solution_edges, execution_time, basic_operations_num, configurations_tested = randomized_algorithm(vertices, edges)
+            solution_edges, execution_time, basic_operations_num, configurations_tested = randomized_algorithm(edges)
 
             # Write the results to the file
             file.write("%s %f %s %s %s %f\n" % (vertices_num, percentage, len(solution_edges), basic_operations_num, configurations_tested, execution_time))
@@ -100,6 +123,22 @@ def algorithm_for_graphs_creator(vertices_num_last_graph, graphs_from):
     print("Create and save image of solution graphs...")
     for solution in solutions:
         create_graphic_image(*solution, graphs_from)
+
+def algorithm_for_SW(graphs_from):
+    file = open("results/" + graphs_from + "/analyze_randomized_algorithm.txt", 'w')
+    file.write("vertices_num edges_num solution_size basic_operations_num configurations_tested execution_time\n")
+
+    #Read graphs that are in folder SW_ALGUNS_GRAFOS and determine the min edge dominating set
+    for file_name in os.listdir("SW_ALGUNS_GRAFOS"):
+        vertices_num, edges_num, edges = read_from_SW(file_name)
+
+        solution_edges, execution_time, basic_operations_num, configurations_tested = randomized_algorithm(edges)
+
+        # Write the results to the file
+        print("%s %s %s %s %s %f\n" % (vertices_num, edges_num, len(solution_edges), basic_operations_num, configurations_tested, execution_time))
+        file.write("%s %s %s %s %s %f\n" % (vertices_num, edges_num, len(solution_edges), basic_operations_num, configurations_tested, execution_time))
+
+    file.close()
 
 def read_arguments():
     # Remove 1st argument from the list of command line arguments
@@ -133,6 +172,8 @@ def main():
 
     if graphs_from == "graphs_creator":
         algorithm_for_graphs_creator(vertices_num_last_graph, graphs_from)
+    elif graphs_from == "SW":
+        algorithm_for_SW(graphs_from)
         
 if __name__ == "__main__":
     main()

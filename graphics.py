@@ -13,6 +13,7 @@ def compare_all_solutions(exhaustive_search, greedy, randomized_graphs_creator):
     randomized_graphs_creator_percentage_max_num_edges = randomized_graphs_creator['percentage_max_num_edges'][:rows_num]
     randomized_graphs_creator_solution_size = randomized_graphs_creator['solution_size'][:rows_num]
 
+    number_of_correct = 0
     for percentage in [0.125, 0.25, 0.50, 0.75]:
         plt.scatter(exhaustive_search_vertices_num[exhaustive_search_percentage_max_num_edges == percentage],exhaustive_search_solution_size[exhaustive_search_percentage_max_num_edges == percentage],c="r",marker="+", label="Exhaustive Search")
         plt.scatter(greedy_vertices_num[greedy_percentage_max_num_edges == percentage],greedy_solution_size[greedy_percentage_max_num_edges == percentage],c="b",marker="x", label="Greedy")
@@ -23,6 +24,11 @@ def compare_all_solutions(exhaustive_search, greedy, randomized_graphs_creator):
         plt.ylabel('Solution Size')
         plt.savefig("graphics/solutions_sizes_percentage_" + str(percentage) + ".png")
         plt.clf()
+
+        exhaustive_solution_size_equals_randomized = exhaustive_search_solution_size[exhaustive_search_percentage_max_num_edges == percentage] == randomized_graphs_creator_solution_size[randomized_graphs_creator_percentage_max_num_edges == percentage]
+        number_of_correct += exhaustive_solution_size_equals_randomized.sum()
+    print("Accuracy of the Randomized Algorithm: " + str((number_of_correct / rows_num) * 100) + "%")
+
 
 def compare_greedy_randomized_solutions(greedy, randomized_graphs_creator):
     randomized_graphs_creator_vertices_num = randomized_graphs_creator['vertices_num']
@@ -42,6 +48,7 @@ def compare_greedy_randomized_solutions(greedy, randomized_graphs_creator):
         plt.ylabel('Solution Size')
         plt.savefig("graphics/greedy_randomized_solutions_sizes_percentage_" + str(percentage) + ".png")
         plt.clf()
+
 
     
 def configurations_tested(data, algorithm_name):
